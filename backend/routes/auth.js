@@ -3,6 +3,7 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const pool = require("../db");
 
+
 const router = express.Router();
 
 // REGISTER
@@ -68,7 +69,8 @@ router.post("/login", async (req, res) => {
     const token = jwt.sign(
       {
         id: user.id,
-        email: user.email
+        email: user.email,
+        role: user.role
       },
       process.env.JWT_SECRET,
       {
@@ -85,6 +87,26 @@ router.post("/login", async (req, res) => {
     res.status(500).json({
       message: "Login Failed"
     });
+  }
+});
+
+router.get("/profile", async (req, res) => {
+  try {
+
+    const result = await pool.query(
+      "SELECT id,name,email FROM users LIMIT 1"
+    );
+
+    res.json(result.rows[0]);
+
+  } catch (error) {
+
+    console.error(error);
+
+    res.status(500).json({
+      message: "Error fetching profile"
+    });
+
   }
 });
 
