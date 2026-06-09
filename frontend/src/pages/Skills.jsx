@@ -1,58 +1,53 @@
-import { useEffect, useState } from "react";
-import axios from "axios";
+﻿import { useEffect, useState } from "react";
+import api from "../services/api";
 
 function Skills() {
   const [skills, setSkills] = useState([]);
   const [skillName, setSkillName] = useState("");
 
-  const loadSkills = () => {
-    axios
-      .get("http://localhost:5000/api/skills")
-      .then((res) => {
-        setSkills(res.data);
-      });
-  };
-
   useEffect(() => {
-    loadSkills();
+    api.get("/skills")
+      .then((res) => setSkills(res.data || []))
+      .catch(console.error);
   }, []);
 
   const addSkill = async () => {
-    await axios.post(
-      "http://localhost:5000/api/skills",
-      {
-        skill_name: skillName
-      }
-    );
+    if (!skillName.trim()) {
+      return;
+    }
 
+    await api.post("/skills", { skill_name: skillName });
     setSkillName("");
-    loadSkills();
+    const res = await api.get("/skills");
+    setSkills(res.data || []);
   };
 
   return (
-    <div>
-      <h2>Skills Master</h2>
+    <div className="page-block">
+      <div className="page-header">
+        <div>
+          <p className="eyebrow">Skills Catalog</p>
+          <h2>Skills Master</h2>
+          <p className="page-description">Create and maintain the skills taxonomy used in employee profiles.</p>
+        </div>
+      </div>
 
-      <input
-        type="text"
-        placeholder="Skill Name"
-        value={skillName}
-        onChange={(e) =>
-          setSkillName(e.target.value)
-        }
-      />
+      <div className="panel-card">
+        <div className="form-field">
+          <label>Skill Name</label>
+          <input value={skillName} onChange={(e) => setSkillName(e.target.value)} placeholder="Add new skill" />
+        </div>
+        <button className="button button--primary" onClick={addSkill}>Add Skill</button>
+      </div>
 
-      <button onClick={addSkill}>
-        Add Skill
-      </button>
-
-      <ul>
-        {skills.map((skill) => (
-          <li key={skill.id}>
-            {skill.skill_name}
-          </li>
-        ))}
-      </ul>
+      <div className="panel-card">
+        <h3>Skill Items</h3>
+        <ul className="simple-list">
+          {skills.map((skill) => (
+            <li key={skill.id}>{skill.skill_name}</li>
+          ))}
+        </ul>
+      </div>
     </div>
   );
 }

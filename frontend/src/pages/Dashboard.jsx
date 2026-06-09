@@ -1,164 +1,143 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import { FiUsers, FiLayers, FiTool, FiBriefcase, FiCalendar } from "react-icons/fi";
+import api from "../services/api";
+import StatCard from "../components/StatCard";
+import AnalyticsChart from "../components/AnalyticsChart";
+import DataTable from "../components/DataTable";
 
 function Dashboard() {
-
   const navigate = useNavigate();
-
   const [stats, setStats] = useState({
     employees: 0,
     departments: 0,
     skills: 0,
-    images: 0
+    total_assets: 0,
+    leave_requests: 0
   });
-
-  const [profile, setProfile] = useState(null);
+  const [departmentCounts, setDepartmentCounts] = useState([]);
+  const [leaveStatusData, setLeaveStatusData] = useState([]);
+  const [assetAllocationData, setAssetAllocationData] = useState([]);
+  const [recentActivity, setRecentActivity] = useState([]);
 
   useEffect(() => {
-    axios
-      .get("http://localhost:5000/api/dashboard/stats")
-      .then((res) => {
-        setStats(res.data);
-      });
-      axios
-  .get("http://localhost:5000/api/auth/profile")
-  .then((res) => {
-    setProfile(res.data);
-  });
+    async function loadDashboard() {
+      try {
+        const results = await Promise.allSettled([
+          api.get("/dashboard/stats"),
+          api.get("/dashboard/department-counts"),
+          api.get("/dashboard/leave-status"),
+          api.get("/dashboard/asset-allocation"),
+          api.get("/audit")
+        ]);
+
+        const [statsRes, deptRes, leaveRes, assetRes, auditRes] = results;
+
+        if (statsRes.status === "fulfilled") {
+          setStats(statsRes.value.data || {
+            employees: 0,
+            departments: 0,
+            skills: 0,
+            total_assets: 0,
+            leave_requests: 0
+          });
+        }
+
+        if (deptRes.status === "fulfilled") {
+          setDepartmentCounts(deptRes.value.data || []);
+        }
+
+        if (leaveRes.status === "fulfilled") {
+          setLeaveStatusData(leaveRes.value.data || []);
+        }
+
+        if (assetRes.status === "fulfilled") {
+          setAssetAllocationData(assetRes.value.data || []);
+        }
+
+        if (auditRes.status === "fulfilled") {
+          const auditData = auditRes.value.data;
+          setRecentActivity(auditData?.rows ? auditData.rows.slice(0, 5) : auditData?.slice?.(0, 5) || []);
+        }
+      } catch (error) {
+        console.error(error);
+      }
+    }
+
+    loadDashboard();
   }, []);
 
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    navigate("/");
-  };
+  const activityColumns = [
+    { label: "ID", key: "id", sortable: true },
+    { label: "Action", key: "action", sortable: true },
+    { label: "Entity", key: "entity_type", sortable: true },
+    { label: "User", key: "user_name" },
+    {
+      label: "Date",
+      key: "created_at",
+      sortable: true,
+      render: (row) => (row.created_at ? new Date(row.created_at).toLocaleString() : "-")
+    }
+  ];
 
   return (
-  <div
-    style={{
-      minHeight: "100vh",
-      background: "#0f172a",
-      color: "white",
-      padding: "40px",
-      fontFamily: "Arial, sans-serif"
-    }}
-  >
-    <div
-      style={{
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "center",
-        marginBottom: "40px"
-      }}
-    >
-      <div>
-        <h1
-          style={{
-            margin: 0,
-            fontSize: "42px"
-          }}
-        >
-          Employee Management System
-        </h1>
-
-        <p
-          style={{
-            color: "#94a3b8",
-            marginTop: "10px"
-          }}
-        >
-          Manage employees, departments and skills
-        </p>
+    <div className="page-block">
+      <div className="page-header">
+        <div>
+          <p className="eyebrow">Enterprise Dashboard</p>
+          <h2>Operational Insights</h2>
+          <p className="page-description">Monitor people, leave workflow, assets, and audit events from a single executive view.</p>
+        </div>
+        <div className="page-header__actions">
+          <button className="button button--primary" onClick={() => navigate("/leave")}>Review leave</button>
+          <button className="button button--secondary" onClick={() => navigate("/assets")}>Manage assets</button>
+        </div>
       </div>
 
-      <button
-        onClick={handleLogout}
-        style={{
-          background: "#ef4444",
-          color: "white",
-          border: "none",
-          padding: "12px 20px",
-          borderRadius: "10px",
-          cursor: "pointer",
-          fontWeight: "bold"
-        }}
-      >
-        Logout
-      </button>
-    </div>
-
-    {profile && (
-      <div
-        style={{
-          background: "#1e293b",
-          padding: "20px",
-          borderRadius: "16px",
-          marginBottom: "30px"
-        }}
-      >
-        <h2 style={{ margin: 0 }}>
-          👋 Welcome, {profile.name}
-        </h2>
-
-        <p
-          style={{
-            color: "#cbd5e1",
-            marginTop: "8px"
-          }}
-        >
-          {profile.email}
-        </p>
-      </div>
-    )}
-
-    <div
-      style={{
-        display: "grid",
-        gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))",
-        gap: "20px"
-      }}
-    >
-      <div
-        style={{
-          background: "#1e293b",
-          padding: "25px",
-          borderRadius: "16px",
-          textAlign: "center",
-          boxShadow: "0 4px 20px rgba(0,0,0,0.3)"
-        }}
-      >
-        <h3>👨‍💼 Employees</h3>
-        <h1>{stats.employees}</h1>
+      <div className="grid-3">
+        <StatCard icon={<FiUsers />} title="Employees Count" value={stats.employees} />
+        <StatCard icon={<FiLayers />} title="Departments Count" value={stats.departments} />
+        <StatCard icon={<FiTool />} title="Skills Count" value={stats.skills} />
+        <StatCard icon={<FiBriefcase />} title="Assets Count" value={stats.total_assets} />
+        <StatCard icon={<FiCalendar />} title="Leave Requests" value={stats.leave_requests} />
       </div>
 
-      <div
-        style={{
-          background: "#1e293b",
-          padding: "25px",
-          borderRadius: "16px",
-          textAlign: "center",
-          boxShadow: "0 4px 20px rgba(0,0,0,0.3)"
-        }}
-      >
-        <h3>🏢 Departments</h3>
-        <h1>{stats.departments}</h1>
+      <div className="grid-3">
+        <AnalyticsChart
+          title="Department Wise Employee Count"
+          subtitle="Headcount by department"
+          chartType="bar"
+          data={departmentCounts}
+          nameKey="name"
+          dataKey="value"
+        />
+        <AnalyticsChart
+          title="Leave Status Distribution"
+          subtitle="Pending, approved and rejected requests"
+          chartType="pie"
+          data={leaveStatusData}
+          nameKey="name"
+          dataKey="value"
+        />
+        <AnalyticsChart
+          title="Asset Allocation Distribution"
+          subtitle="Assigned vs available assets"
+          chartType="pie"
+          data={assetAllocationData}
+          nameKey="name"
+          dataKey="value"
+        />
       </div>
 
-      <div
-        style={{
-          background: "#1e293b",
-          padding: "25px",
-          borderRadius: "16px",
-          textAlign: "center",
-          boxShadow: "0 4px 20px rgba(0,0,0,0.3)"
-        }}
-      >
-        <h3>🛠 Skills</h3>
-        <h1>{stats.skills}</h1>
+      <div className="panel-card">
+        <div className="panel-card__header">
+          <h3>Recent activity</h3>
+          <p>Latest audit events and workflow updates.</p>
+        </div>
+        <DataTable columns={activityColumns} rows={recentActivity} pageSize={5} />
       </div>
     </div>
-  </div>
-);
+  );
 }
 
 export default Dashboard;

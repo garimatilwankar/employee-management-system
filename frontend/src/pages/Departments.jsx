@@ -1,58 +1,53 @@
-import { useEffect, useState } from "react";
-import axios from "axios";
+﻿import { useEffect, useState } from "react";
+import api from "../services/api";
 
 function Departments() {
   const [departments, setDepartments] = useState([]);
   const [departmentName, setDepartmentName] = useState("");
 
-  const loadDepartments = () => {
-    axios
-      .get("http://localhost:5000/api/departments")
-      .then((res) => {
-        setDepartments(res.data);
-      });
-  };
-
   useEffect(() => {
-    loadDepartments();
+    api.get("/departments")
+      .then((res) => setDepartments(res.data || []))
+      .catch(console.error);
   }, []);
 
   const addDepartment = async () => {
-    await axios.post(
-      "http://localhost:5000/api/departments",
-      {
-        department_name: departmentName
-      }
-    );
+    if (!departmentName.trim()) {
+      return;
+    }
 
+    await api.post("/departments", { department_name: departmentName });
     setDepartmentName("");
-    loadDepartments();
+    const res = await api.get("/departments");
+    setDepartments(res.data || []);
   };
 
   return (
-    <div>
-      <h2>Department Master</h2>
+    <div className="page-block">
+      <div className="page-header">
+        <div>
+          <p className="eyebrow">Department Master</p>
+          <h2>Departments</h2>
+          <p className="page-description">Manage department names and view organizational structure.</p>
+        </div>
+      </div>
 
-      <input
-        type="text"
-        placeholder="Department Name"
-        value={departmentName}
-        onChange={(e) =>
-          setDepartmentName(e.target.value)
-        }
-      />
+      <div className="panel-card">
+        <div className="form-field">
+          <label>Department Name</label>
+          <input value={departmentName} onChange={(e) => setDepartmentName(e.target.value)} placeholder="Add new department" />
+        </div>
+        <button className="button button--primary" onClick={addDepartment}>Add Department</button>
+      </div>
 
-      <button onClick={addDepartment}>
-        Add Department
-      </button>
-
-      <ul>
-        {departments.map((dept) => (
-          <li key={dept.id}>
-            {dept.department_name}
-          </li>
-        ))}
-      </ul>
+      <div className="panel-card">
+        <h3>Current Departments</h3>
+        <ul className="simple-list">
+          {departments.map((dept) => (
+            <li key={dept.id}>{dept.department_name}</li>
+          ))}
+        </ul>
+      </div>
     </div>
   );
 }
