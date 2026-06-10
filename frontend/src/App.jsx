@@ -1,42 +1,54 @@
-import { useEffect, useState } from "react";
-import axios from "axios";
-import EmployeeList from "./pages/EmployeeList";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+
+import Login from "./pages/Login";
+import Dashboard from "./pages/Dashboard";
+import ProtectedRoute from "./components/ProtectedRoute";
+import Layout from "./components/Layout";
+import Leave from "./pages/Leave";
+import Assets from "./pages/Assets";
+import AuditLogs from "./pages/AuditLogs";
+import Employees from "./pages/Employees";
+import Reports from "./pages/Reports";
+import Settings from "./pages/Settings";
 import CreateEmployee from "./pages/CreateEmployee";
+import EmployeeList from "./pages/EmployeeList";
 import Departments from "./pages/Departments";
 import Skills from "./pages/Skills";
+
 function App() {
-  const [stats, setStats] = useState({
-    employees: 0,
-    departments: 0,
-    skills: 0,
-    images: 0,
-  });
-
-  useEffect(() => {
-    axios
-      .get("http://localhost:5000/api/dashboard/stats")
-      .then((res) => {
-        setStats(res.data);
-      })
-      .catch((err) => {
-        console.error(err);
-      });
-  }, []);
-
   return (
-    <div>
-      <h1>Employee Management System</h1>
-      <h2>Dashboard</h2>
+    <BrowserRouter>
 
-      <h3>Total Employees: {stats.employees}</h3>
-      <h3>Total Departments: {stats.departments}</h3>
-      <h3>Total Skills: {stats.skills}</h3>
-      <h3>Total Images: {stats.images}</h3>
-      <EmployeeList />
-      <CreateEmployee />
-      <Departments />
-      <Skills />
-    </div>
+      <Routes>
+
+        <Route
+          path="/"
+          element={<Login />}
+        />
+
+        <Route
+          element={
+            <ProtectedRoute>
+              <Layout />
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<Navigate to="/dashboard" replace />} />
+          <Route path="dashboard" element={<Dashboard />} />
+          <Route path="employees" element={<Employees />} />
+          <Route path="employees/create" element={<CreateEmployee />} />
+          <Route path="employees/list" element={<EmployeeList />} />
+          <Route path="departments" element={<Departments />} />
+          <Route path="skills" element={<Skills />} />
+          <Route path="leave" element={<Leave />} />
+          <Route path="assets" element={<Assets />} />
+          <Route path="audit" element={<AuditLogs />} />
+          <Route path="reports" element={<Reports />} />
+          <Route path="settings" element={<Settings />} />
+        </Route>
+      </Routes>
+
+    </BrowserRouter>
   );
 }
 
