@@ -12,9 +12,20 @@ export default function Employees() {
   const [skills, setSkills] = useState([]);
 
   useEffect(() => {
-    api.get("/employees").then((res) => setEmployees(res.data.rows ?? res.data ?? [])).catch(console.error);
-    api.get("/departments").then((res) => setDepartments(res.data)).catch(console.error);
-    api.get("/skills").then((res) => setSkills(res.data)).catch(console.error);
+    const safeSet = (fn) => (res) => fn(res?.data?.rows ?? res?.data ?? []);
+
+    api.get("/employees").then(safeSet(setEmployees)).catch((e) => {
+      console.error(e);
+      setEmployees([]);
+    });
+    api.get("/departments").then((res) => setDepartments(res.data || [])).catch((e) => {
+      console.error(e);
+      setDepartments([]);
+    });
+    api.get("/skills").then((res) => setSkills(res.data || [])).catch((e) => {
+      console.error(e);
+      setSkills([]);
+    });
   }, []);
 
   const employeeColumns = [

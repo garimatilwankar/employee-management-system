@@ -13,29 +13,34 @@ function AuditLogs() {
 
   const pageSize = 10;
 
-  const fetchLogs = async () => {
-    try {
-      const response = await api.get("/audit", {
-        params: {
-          action: actionFilter || undefined,
-          search: search || undefined,
-          sortBy: sortKey,
-          sortOrder,
-          page,
-          limit: pageSize
-        }
-      });
-      setLogs(response.data.rows || []);
-      setTotalLogs(response.data.total || 0);
-    } catch (error) {
-      console.error(error);
-      alert("Error loading audit logs");
-    }
-  };
-
   useEffect(() => {
+    const fetchLogs = async () => {
+      try {
+        const response = await api.get("/audit", {
+          params: {
+            action: actionFilter || undefined,
+            search: search || undefined,
+            sortBy: sortKey,
+            sortOrder,
+            page,
+            limit: pageSize
+          }
+        });
+        setLogs(response.data.rows || []);
+        setTotalLogs(response.data.total || 0);
+      } catch (error) {
+        console.error(error);
+        setLogs([]);
+        setTotalLogs(0);
+        alert(error?.response?.data?.message || "Error Loading Audit Logs");
+      }
+    };
+
     fetchLogs();
   }, [actionFilter, search, sortKey, sortOrder, page]);
+
+
+
 
   const columns = [
     { label: "ID", key: "id", sortable: true },

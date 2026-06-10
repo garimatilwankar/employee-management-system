@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { FiBell } from "react-icons/fi";
 import api from "../services/api";
@@ -10,18 +10,26 @@ export default function Topbar() {
 
   const unreadCount = notifications.filter((item) => !item.is_read).length;
 
-  const fetchNotifications = async () => {
+  const fetchNotifications = useCallback(async () => {
     try {
       const response = await api.get("/notifications");
       setNotifications(response.data || []);
     } catch (error) {
+      // If token is invalid/expired, don't spam console or block UI.
+      if (error?.response?.status === 401) {
+        localStorage.removeItem("token");
+        navigate("/", { replace: true });
+        return;
+      }
       console.error(error);
     }
-  };
+  }, [navigate]);
 
   useEffect(() => {
-    fetchNotifications();
-  }, []);
+    // token failures handled inside fetchNotifications
+    void fetchNotifications();
+  }, [fetchNotifications]);
+
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -51,7 +59,7 @@ export default function Topbar() {
       </div>
 
       <div className="topbar__actions">
-        <button className="button button--ghost" onClick={() => navigate("/reports")}>Create report</button>
+        <button className="button button--ghost" onClick={() => navigate("/reports")}>View reports</button>
 
         <div className="notification-menu">
           <button className="notification-button" onClick={toggleDropdown}>

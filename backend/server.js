@@ -57,13 +57,69 @@ app.get(
 
 const ensureTables = async () => {
   try {
+    // Core schema needed by all routes (inferred from routes/controllers)
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS users (
+        id SERIAL PRIMARY KEY,
+        name TEXT NOT NULL,
+        email TEXT NOT NULL UNIQUE,
+        password TEXT NOT NULL,
+        role TEXT NOT NULL DEFAULT 'Admin',
+        created_at TIMESTAMP NOT NULL DEFAULT NOW()
+      )
+    `);
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS departments (
+        id SERIAL PRIMARY KEY,
+        department_name TEXT NOT NULL UNIQUE,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW()
+      )
+    `);
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS skills (
+        id SERIAL PRIMARY KEY,
+        skill_name TEXT NOT NULL UNIQUE,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW()
+      )
+    `);
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS employee_profiles (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        department_id INTEGER NOT NULL REFERENCES departments(id) ON DELETE RESTRICT,
+        phone TEXT,
+        address TEXT,
+        designation TEXT,
+        salary NUMERIC(12,2),
+        created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        UNIQUE(user_id)
+      )
+    `);
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS leave_applications (
+        id SERIAL PRIMARY KEY,
+        employee_id INTEGER NOT NULL REFERENCES employee_profiles(id) ON DELETE CASCADE,
+        leave_type TEXT NOT NULL,
+        from_date TIMESTAMP NOT NULL,
+        to_date TIMESTAMP NOT NULL,
+        reason TEXT,
+        status TEXT NOT NULL DEFAULT 'Pending',
+        created_at TIMESTAMP NOT NULL DEFAULT NOW()
+      )
+    `);
+
     await pool.query(`
       CREATE TABLE IF NOT EXISTS assets (
         id SERIAL PRIMARY KEY,
         asset_name TEXT NOT NULL,
         asset_type TEXT NOT NULL,
         serial_number TEXT UNIQUE NOT NULL,
-        assigned_to INTEGER REFERENCES employee_profiles(id),
+        assigned_to INTEGER REFERENCES employee_profiles(id) ON DELETE SET NULL,
         assigned_date TIMESTAMP,
         return_date TIMESTAMP,
         status TEXT NOT NULL DEFAULT 'Available'
@@ -77,7 +133,7 @@ const ensureTables = async () => {
         entity_type TEXT NOT NULL,
         old_value TEXT,
         new_value TEXT,
-        user_id INTEGER REFERENCES users(id),
+        user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
         created_at TIMESTAMP NOT NULL DEFAULT NOW()
       )
     `);
@@ -93,7 +149,7 @@ const ensureTables = async () => {
       )
     `);
 
-    console.log("Assets, audit_logs, and notifications tables verified or created");
+    console.log("Database schema verified/created (users, employee_profiles, departments, skills, leave_applications, assets, audit_logs, notifications)");
   } catch (error) {
     console.error("Could not create tables", error);
   }

@@ -38,7 +38,7 @@ const getAuditLogs = async (req, res) => {
       filters.push(`(
           LOWER(al.action) LIKE $${params.length - 4} OR
           LOWER(al.entity_type) LIKE $${params.length - 3} OR
-          LOWER(u.name) LIKE $${params.length - 2} OR
+          LOWER(COALESCE(u.name, '')) LIKE $${params.length - 2} OR
           LOWER(COALESCE(al.old_value, '')) LIKE $${params.length - 1} OR
           LOWER(COALESCE(al.new_value, '')) LIKE $${params.length}
         )`);
@@ -61,7 +61,7 @@ const getAuditLogs = async (req, res) => {
         al.old_value,
         al.new_value,
         al.user_id,
-        u.name AS user_name,
+        COALESCE(u.name, 'System') AS user_name,
         al.created_at
       FROM audit_logs al
       LEFT JOIN users u ON al.user_id = u.id
